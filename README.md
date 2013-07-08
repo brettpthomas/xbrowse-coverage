@@ -6,6 +6,7 @@ It's probably not useful to anybody else - easier to use BEDtools or whatever.
 But feel free to get in touch if you have a reason to expand it.
 
 The coverage data we work with now all comes back in a BED file; each region in the genome is annotated with one of:
+
     POOR_MAPPING_QUALITY
     LOW_COVERAGE
     NO_COVERAGE
@@ -16,6 +17,7 @@ This package read these raw BED files for a set of individuals,
 loads the raw data into a MongoDB database, and provides a set of lookup methods.
 
 As part of the wrapper, we condense these fields into the following:
+
     callable
     low_coverage
     poor_mapping
