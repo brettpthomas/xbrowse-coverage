@@ -1,3 +1,6 @@
+import json
+import bed_files
+
 
 def get_interval_overlap(xstart, xend, coverage_interval):
     """
@@ -8,6 +11,7 @@ def get_interval_overlap(xstart, xend, coverage_interval):
     if xend < coverage_interval['xstart']: return 0
 
     return 1 + xend - xstart - max(0, coverage_interval['xstart']-xstart) + min(0, coverage_interval['xend']-xend)
+
 
 def get_coverage_totals_in_region_for_interval_set(xstart, xend, interval_set):
     """
@@ -20,6 +24,7 @@ def get_coverage_totals_in_region_for_interval_set(xstart, xend, interval_set):
     total_so_far = sum(totals.values())
     totals['low_coverage'] += (xend - xstart - total_so_far)
     return totals
+
 
 def flatten_region_list(region_list):
     """
@@ -40,3 +45,38 @@ def flatten_region_list(region_list):
             current_region = (start, end)
     flattened_list.append(current_region)
     return flattened_list
+
+
+def iterate_exon_totals(coverage_file, exons):
+    coverages = bed_files.iterate_coverage_bed_file(coverage_file)
+    current_exons = []
+
+    next_exon = {'n': exons.next()} # no write closures in python 2
+
+    def move_needle_to(xpos):
+        while True:
+            if next_exon['n'][1] > xpos:
+                break
+            e = exons.next()
+            next_exon['n'] = e
+            totals = {
+                'callable': 0,
+                'low_coverage': e[2]-e[1],
+                'poor_mapping': 0
+            }
+            current_exons.append((e, totals))
+
+    move_needle_to(0)
+    for coverage in coverages:
+        move_needle_to(coverage['xend'])
+        for i, (exon, totals) in enumerate(current_exons):
+            if exon[2] < coverage['xstart']:
+                current_exons.pop(i)
+                doc = totals
+                doc['exon_id'] = exon[0]
+                doc['xstart'] = exon[1]
+                doc['xend'] = exon[2]
+                yield doc
+        for exon, totals in current_exons:
+            val = get_interval_overlap(exon[1], exon[2], coverage )
+            totals[coverage['coverage']] += val
